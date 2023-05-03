@@ -10,6 +10,7 @@ import EditorPage from './EditorPage'
 import LoadingPage from './LoadingPage'
 import ProjectAddon from './ProjectAddon'
 import WorkfilesPage from './WorkfilesPage'
+import GraphPage from './GraphPage'
 
 import usePubSub from '/src/hooks/usePubSub'
 import { setBreadcrumbs } from '/src/features/context'
@@ -116,6 +117,7 @@ const ProjectPage = () => {
   let child = null
   if (module === 'editor') child = <EditorPage />
   else if (module === 'workfiles') child = <WorkfilesPage />
+  else if (module === 'graph') child = <GraphPage />
   else if (addonName) {
     for (const addon of addonsData) {
       if (addon.name === addonName) {
@@ -144,6 +146,7 @@ const ProjectPage = () => {
         <NavLink to={`/projects/${projectName}/browser`}>Browser</NavLink>
         <NavLink to={`/projects/${projectName}/editor`}>Editor</NavLink>
         <NavLink to={`/projects/${projectName}/workfiles`}>Workfiles</NavLink>
+        <NavLink to={`/projects/${projectName}/graph`}>Graph</NavLink>
         {addonsData.map((addon) => (
           <NavLink to={`/projects/${projectName}/addon/${addon.name}`} key={addon.name}>
             {addon.title}
