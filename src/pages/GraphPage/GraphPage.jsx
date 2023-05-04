@@ -4,6 +4,8 @@ import ReactFlow, { Background, useEdgesState, useNodesState } from 'reactflow'
 import { useSelector } from 'react-redux'
 import { useGetEntitiesGraphQuery } from '/src/services/graph/getGraph'
 import { ArrayParam, StringParam, useQueryParam, withDefault } from 'use-query-params'
+import { Button } from '@ynput/ayon-react-components'
+import copyToClipboard from '/src/helpers/copyToClipboard'
 
 // const initialNodes = [
 //   { id: '1', position: { x: 300, y: 100 }, data: { label: '1' } },
@@ -19,9 +21,13 @@ const GraphPage = () => {
   const projectName = useSelector((state) => state.project.name)
   const { focused } = useSelector((state) => state.context) || {}
   // type query param state
-  const [type] = useQueryParam('type', withDefault(StringParam, focused?.type))
+  const [type = ''] = useQueryParam('type', withDefault(StringParam, focused?.type))
   // id query param state
-  const [ids] = useQueryParam(['id'], withDefault(ArrayParam, focused?.[focused?.type + 's']))
+  const [ids = []] = useQueryParam(['id'], withDefault(ArrayParam, focused?.[focused?.type + 's']))
+
+  const shareLink = `${
+    window.location.origin
+  }/projects/${projectName}/graph?type=${type}&id=${ids.join('&id=')}`
 
   const {
     data = {},
@@ -57,8 +63,15 @@ const GraphPage = () => {
       style={{
         width: '100%',
         height: '100%',
+        position: 'relative',
       }}
     >
+      <Button
+        label="Share Graph"
+        icon="share"
+        style={{ position: 'absolute', top: 10, right: 10, zIndex: 10 }}
+        onClick={() => copyToClipboard(shareLink)}
+      />
       <ReactFlow
         nodes={nodes}
         edges={edges}

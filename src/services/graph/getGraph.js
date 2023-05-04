@@ -1,5 +1,6 @@
 import { ayonApi } from '../ayon'
 import { FOLDER_QUERY, SUBSET_QUERY, TASK_QUERY, VERSION_QUERY } from './queries'
+import { transformFolder } from './transform'
 import ayonClient from '/src/ayon'
 
 const buildEntitiesQuery = (type, attribs) => {
@@ -33,68 +34,6 @@ const buildEntitiesQuery = (type, attribs) => {
   return QUERY.replace('#ATTRS#', f_attribs)
 }
 
-const transformFolder = (data) => {
-  // transform data into two arrays
-  // one for nodes and one for edges
-  // nodes = [{id, data: {label}, position: {x, y}}]
-  // edges = [{id, source, target}]
-
-  // nodes
-  const nodes = []
-  const edges = []
-
-  // add nodes
-  for (const parent of data) {
-    const parentId = parent.node.id
-    const parentName = parent.node.name
-    const node = {
-      id: parentId,
-      data: {
-        label: parentName,
-        type: parent.node.folderType,
-      },
-      position: { x: 100, y: 100 },
-      sourcePosition: 'right',
-    }
-    nodes.push(node)
-
-    const createNodesAndEdges = (e, type) => {
-      // add to nodes
-      for (const edge of e) {
-        const edgeId = edge.node.id
-        const edgeName = edge.node.name
-        let y = (nodes.length - 1) * 50 + 100
-        if (type === 'task') {
-          y += 100
-        }
-        const node = {
-          id: edgeId,
-          data: {
-            label: edgeName,
-          },
-          position: { x: 600, y },
-          targetPosition: 'left',
-        }
-        nodes.push(node)
-
-        // create edges
-        edges.push({
-          id: `${parentName}-${edgeName}`,
-          source: parentId,
-          target: edgeId,
-        })
-      }
-    }
-
-    // add subsets
-    createNodesAndEdges(parent.node.subsets.edges, 'subset')
-    // add tasks
-    createNodesAndEdges(parent.node.tasks.edges, 'task')
-  }
-
-  return { nodes, edges }
-}
-
 const transformToType = (data, type) => {
   switch (type) {
     case 'folder':
@@ -122,7 +61,7 @@ const getGraph = ayonApi.injectEndpoints({
         },
       }),
       transformResponse: (response, meta, { type }) =>
-        transformToType(response.data.project[type + 's'].edges, type),
+        response.data ? transformToType(response.data.project[type + 's'].edges, type) : [],
       transformErrorResponse: (error) => error.data?.detail || `Error ${error.status}`,
     }),
   }),

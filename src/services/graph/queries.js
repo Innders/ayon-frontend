@@ -15,6 +15,29 @@ export const TASK_QUERY = `
   }
 `
 
+// fragment for workfiles
+export const WORKFILES_FRAGMENT = `
+    fragment WorkfilesFragment on WorkfilesConnection {
+        edges {
+            node {
+                id
+                name
+            }
+        }
+
+    }`
+// fragment for versions
+export const VERSIONS_FRAGMENT = `
+    fragment VersionsFragment on VersionsConnection {
+        edges {
+            node {
+                id
+                name
+            }
+        }
+
+    }`
+
 export const FOLDER_QUERY = `
     query Folders($projectName: String!, $ids: [String!]!) {
         project(name: $projectName) {
@@ -24,11 +47,16 @@ export const FOLDER_QUERY = `
                         id
                         name
                         folderType
+                        parents
                         subsets {
                           edges {
                             node {
                               name
                               id
+                              family
+                              versions {
+                                ...VersionsFragment
+                              }
                             }
                           }
                         }
@@ -37,6 +65,10 @@ export const FOLDER_QUERY = `
                             node {
                               name
                               id
+                              taskType
+                              workfiles {
+                                ...WorkfilesFragment
+                              }
                             }
                           }
                         }
@@ -45,7 +77,8 @@ export const FOLDER_QUERY = `
             }
         }
     }
-
+    ${WORKFILES_FRAGMENT}
+    ${VERSIONS_FRAGMENT}
 `
 
 export const VERSION_QUERY = `
