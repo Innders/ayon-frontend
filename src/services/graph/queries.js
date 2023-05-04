@@ -54,9 +54,6 @@ export const FOLDER_QUERY = `
                               name
                               id
                               family
-                              versions {
-                                ...VersionsFragment
-                              }
                             }
                           }
                         }
@@ -66,9 +63,6 @@ export const FOLDER_QUERY = `
                               name
                               id
                               taskType
-                              workfiles {
-                                ...WorkfilesFragment
-                              }
                             }
                           }
                         }
@@ -77,8 +71,6 @@ export const FOLDER_QUERY = `
             }
         }
     }
-    ${WORKFILES_FRAGMENT}
-    ${VERSIONS_FRAGMENT}
 `
 
 export const VERSION_QUERY = `

@@ -1,6 +1,5 @@
 import { ayonApi } from '../ayon'
 import { FOLDER_QUERY, SUBSET_QUERY, TASK_QUERY, VERSION_QUERY } from './queries'
-import { transformFolder } from './transform'
 import ayonClient from '/src/ayon'
 
 const buildEntitiesQuery = (type, attribs) => {
@@ -34,15 +33,6 @@ const buildEntitiesQuery = (type, attribs) => {
   return QUERY.replace('#ATTRS#', f_attribs)
 }
 
-const transformToType = (data, type) => {
-  switch (type) {
-    case 'folder':
-      return transformFolder(data)
-    default:
-      break
-  }
-}
-
 const getGraph = ayonApi.injectEndpoints({
   endpoints: (build) => ({
     getEntitiesGraph: build.query({
@@ -61,7 +51,7 @@ const getGraph = ayonApi.injectEndpoints({
         },
       }),
       transformResponse: (response, meta, { type }) =>
-        response.data ? transformToType(response.data.project[type + 's'].edges, type) : [],
+        response.data ? response.data.project[type + 's'].edges : [],
       transformErrorResponse: (error) => error.data?.detail || `Error ${error.status}`,
     }),
   }),

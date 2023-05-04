@@ -19,6 +19,7 @@ const families = {
   lightrig: { name: 'lightrig', icon: 'wb_incandescent' },
   lut: { name: 'lut', icon: 'opacity' },
   workfile: { name: 'workfile', icon: 'home_repair_service' },
+  def: { name: 'default', icon: 'inventory_2' },
 }
 
 const projectSlice = createSlice({

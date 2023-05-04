@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useMemo } from 'react'
 import 'reactflow/dist/style.css'
 import ReactFlow, { Background, useEdgesState, useNodesState } from 'reactflow'
 import { useSelector } from 'react-redux'
@@ -6,20 +6,15 @@ import { useGetEntitiesGraphQuery } from '/src/services/graph/getGraph'
 import { ArrayParam, StringParam, useQueryParam, withDefault } from 'use-query-params'
 import { Button } from '@ynput/ayon-react-components'
 import copyToClipboard from '/src/helpers/copyToClipboard'
-
-// const initialNodes = [
-//   { id: '1', position: { x: 300, y: 100 }, data: { label: '1' } },
-//   { id: '2', position: { x: 100, y: 200 }, data: { label: '2' } },
-//   { id: '3', position: { x: 300, y: 200 }, data: { label: '3' } },
-// ]
-// const initialEdges = [
-//   { id: 'e1-2', source: '1', target: '2' },
-//   { id: 'e1-3', source: '1', target: '3' },
-// ]
+import EntityNode from '/src/components/Graph/EntityNode'
+import { transformFolder } from './transform'
 
 const GraphPage = () => {
-  const projectName = useSelector((state) => state.project.name)
+  const { name: projectName, folders, tasks, families } = useSelector((state) => state.project)
+
   const { focused } = useSelector((state) => state.context) || {}
+  // add custom node types to graph
+  const nodeTypes = useMemo(() => ({ entityNode: EntityNode }), [])
   // type query param state
   const [type = ''] = useQueryParam('type', withDefault(StringParam, focused?.type))
   // id query param state
@@ -30,7 +25,7 @@ const GraphPage = () => {
   }/projects/${projectName}/graph?type=${type}&id=${ids.join('&id=')}`
 
   const {
-    data = {},
+    data = [],
     isLoading,
     isSuccess,
   } = useGetEntitiesGraphQuery(
@@ -44,6 +39,16 @@ const GraphPage = () => {
     },
   )
 
+  // transform data into nodes and edges
+  const graphData = useMemo(() => {
+    switch (type) {
+      case 'folder':
+        return transformFolder(data, folders, families, tasks)
+      default:
+        break
+    }
+  }, [data])
+
   // eslint-disable-next-line no-unused-vars
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   // eslint-disable-next-line no-unused-vars
@@ -52,11 +57,11 @@ const GraphPage = () => {
   // set node based off focused context
   useEffect(() => {
     if (!isLoading && isSuccess) {
-      const { nodes = [], edges = [] } = data
+      const { nodes = [], edges = [] } = graphData || {}
       setNodes(nodes)
       setEdges(edges)
     }
-  }, [isLoading, isSuccess, data])
+  }, [isLoading, isSuccess, graphData])
 
   return (
     <div
@@ -77,6 +82,7 @@ const GraphPage = () => {
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        nodeTypes={nodeTypes}
       >
         <Background variant="dots" gap={12} size={1} />
       </ReactFlow>

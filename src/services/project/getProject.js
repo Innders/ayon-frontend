@@ -67,9 +67,10 @@ const getProject = ayonApi.injectEndpoints({
             tags: [],
           }
           // function: transforms and array into an object with the array item's name as the key using for loop
-          const transformArrayToObject = (array, type) => {
+          const transformArrayToObject = (array, type, def) => {
             const initialValue = {}
-            return array.reduce((obj, item) => {
+            return [...array, def].reduce((obj, item) => {
+              if (!item) return obj
               order[type].push(item.name)
               return {
                 ...obj,
@@ -78,8 +79,14 @@ const getProject = ayonApi.injectEndpoints({
             }, initialValue)
           }
 
-          const tasks = transformArrayToObject(project.taskTypes, 'tasks')
-          const folders = transformArrayToObject(project.folderTypes, 'folders')
+          const tasks = transformArrayToObject(project.taskTypes, 'tasks', {
+            name: 'def',
+            icon: 'task_alt',
+          })
+          const folders = transformArrayToObject(project.folderTypes, 'folders', {
+            name: 'def',
+            icon: 'folder',
+          })
           const statuses = transformArrayToObject(project.statuses, 'statuses')
           const tags = transformArrayToObject(project.tags, 'tags')
           const attrib = project?.attrib || {}

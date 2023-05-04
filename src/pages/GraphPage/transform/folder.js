@@ -1,4 +1,5 @@
-export const transformFolder = (data) => {
+export const transformFolder = (rawData = [], folders, subsets, tasks) => {
+  const data = [...rawData]
   // transform data into two arrays
   // one for nodes and one for edges
   // nodes = [{id, data: {label}, position: {x, y}}]
@@ -10,7 +11,7 @@ export const transformFolder = (data) => {
 
   // sort data by the number of parents
   // less parents first
-  data.sort((a, b) => a.node.parents.length - b.node.parents.length)
+  data.sort((a, b) => a?.node?.parents?.length - b?.node?.parents?.length)
 
   // keep track if which rows are taken
   let rows = 0
@@ -26,15 +27,21 @@ export const transformFolder = (data) => {
     const depth = entityParents.length
     const x = rows * 200 + 50
     const y = 50 * depth + 100
+
+    // FOLDER NODE
     const node = {
       id: entityId,
       data: {
         label: entityName,
-        type: entity.folderType,
+        type: 'folder',
+        subType: entity.folderType,
+        icon: folders[entity.folderType]?.icon || folders?.def || 'folder',
+        iconDefault: folders?.def?.icon || 'folder',
       },
       position: { x, y },
       sourcePosition: 'right',
       targetPosition: 'left',
+      type: 'entityNode',
     }
     nodes.push(node)
 
@@ -79,14 +86,23 @@ export const transformFolder = (data) => {
         if (type === 'task') {
           subY += 100
         }
+
+        // child node
         const node = {
           id: edgeId,
           data: {
             label: edgeName,
+            type,
+            icon:
+              type === 'task'
+                ? tasks?.[edge.node.taskType]?.icon || tasks?.def?.icon
+                : subsets?.[edge.node.family]?.icon || subsets?.def?.icon,
+            iconDefault: type === 'task' ? tasks?.def?.icon : subsets?.def?.icon,
           },
           position: { x: x + 200, y: subY },
           targetPosition: 'left',
           sourcePosition: 'right',
+          type: 'entityNode',
         }
         nodes.push(node)
 
@@ -96,39 +112,6 @@ export const transformFolder = (data) => {
           source: entityId,
           target: edgeId,
         })
-
-        // const workfilesNodes = (files) => {
-        //   files.forEach((file, i) => {
-        //     const fileId = file.node.id
-        //     const fileName = file.node.name
-        //     const fileY = i * 50 + 100 + subY
-        //     const node = {
-        //       id: fileId,
-        //       data: {
-        //         label: fileName,
-        //       },
-        //       position: { x: x + 400, y: fileY },
-        //       targetPosition: 'left',
-        //       sourcePosition: 'right',
-        //     }
-        //     nodes.push(node)
-
-        //     // create edges
-        //     edges.push({
-        //       id: `${edgeName}-${fileName}`,
-        //       source: edgeId,
-        //       target: fileId,
-        //     })
-        //   })
-        // }
-
-        // if (edge.node.workfiles?.edges.length) {
-        //   workfilesNodes(edge.node.workfiles.edges)
-        // }
-
-        // if (edge.node.versions?.edges.length) {
-        //   workfilesNodes(edge.node.versions.edges)
-        // }
       })
     }
 
