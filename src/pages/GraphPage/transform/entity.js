@@ -48,7 +48,6 @@ export const transformEntity = (rawData = [], projectIcons, type, hierarchy = {}
   // add nodes
   data.forEach(({ node: entity }) => {
     const entityId = entity.id
-    const entityName = entity.name
     // const parentId = entity.parentId
     const x = columns * 200 + 400
     const y = 100
@@ -96,7 +95,7 @@ export const transformEntity = (rawData = [], projectIcons, type, hierarchy = {}
 
         // create edges
         edges.push({
-          id: `${inputName}-${entityName}`,
+          id: `${inputName}-${entityId}`,
           source: inputId,
           target: entityId,
         })
@@ -148,7 +147,7 @@ export const transformEntity = (rawData = [], projectIcons, type, hierarchy = {}
 
         // create edges
         edges.push({
-          id: `${entityName}-${childName}`,
+          id: `${entityId}-${childId || childName}`,
           source: entityId,
           target: childId || childName,
         })
