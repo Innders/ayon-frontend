@@ -56,17 +56,6 @@ const GraphPage = () => {
 
   // const { data: usersData = [] } = useGetUsersGraphQuery({ users: ids }, { skip: type !== 'user' })
 
-  const [getGraphEntity] = useLazyGetEntitiesGraphQuery()
-  // we get the inputs and outputs in the background before we click on a node
-  const getEntityCache = async (type, id) => {
-    try {
-      if (!id || !type) return
-      getGraphEntity({ projectName, type, ids: [id] }, true)
-    } catch (error) {
-      console.error(error)
-    }
-  }
-
   const createDataObject = (data = []) => {
     let hierarchyObject = {}
 
@@ -100,6 +89,22 @@ const GraphPage = () => {
       if (!names.length) return
       const res = await getGraphUser({ names }, true).unwrap()
       return res
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  const [getGraphEntity] = useLazyGetEntitiesGraphQuery()
+  // we get the inputs and outputs in the background before we click on a node
+  const getEntityCache = async (type, id) => {
+    try {
+      if (!id || !type) return
+      const res = await getGraphEntity({ projectName, type, ids: [id] }, true).unwrap()
+      if (type === 'task') {
+        // pre-fetch users
+        const names = res.map(({ node: { assignees } }) => assignees).flat()
+        getUsersData(names)
+      }
     } catch (error) {
       console.error(error)
     }
