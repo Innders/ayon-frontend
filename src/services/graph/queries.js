@@ -1,22 +1,5 @@
 import { capitalize } from 'lodash'
 
-export const TASK_QUERY = `
-  query Tasks($projectName: String!, $ids: [String!]!) {
-      project(name: $projectName) {
-          tasks(ids: $ids) {
-              edges {
-                  node {
-                      id
-                      name
-                      label
-                      taskType
-                  }
-              }
-          }
-      }
-  }
-`
-
 const getSubType = (type) => {
   switch (type) {
     case 'task':
@@ -53,7 +36,7 @@ export const FOLDER_QUERY = `
                         name
                         hasChildren
                         subType: folderType
-                        parent{
+                        folder: parent{
                             id
                             name
                         }
@@ -72,37 +55,33 @@ export const FOLDER_QUERY = `
     ${createTypeFragment('subset')}
 `
 
-export const VERSION_QUERY = `
-    query Versions($projectName: String!, $ids: [String!]!) {
-        project(name: $projectName) {
-            versions(ids: $ids) {
-                edges {
-                    node {
+export const TASK_QUERY = `
+  query Tasks($projectName: String!, $ids: [String!]!) {
+      project(name: $projectName) {
+          tasks(ids: $ids) {
+              edges {
+                  node {
+                      id
+                      name
+                      subType: taskType
+                      folder {
                         id
-                        version
                         name
-                        tags
-                        subset {
-                            name
-                            family
-                            folder {
-                                name
-                                parents
-                            }
+                        subType: folderType
+                      }
+                        versions {
+                            ...VersionsFragment
                         }
-                        representations{
-                            edges {
-                                node {
-                                    id
-                                    name
-                                }
-                            }
+                        workfiles {
+                            ...WorkfilesFragment
                         }
-                    }
-                }
-            }
-        }
-    }
+                  }
+              }
+          }
+      }
+  }
+    ${createTypeFragment('version')}
+    ${createTypeFragment('workfile')}
 `
 
 export const SUBSET_QUERY = `
@@ -114,6 +93,12 @@ query Subset($projectName: String!, $ids: [String!]!) {
                     id
                     name
                     folderId
+                    subType: family
+                    folder {
+                        id
+                        name
+                        subType: folderType
+                    }
                     versions {
                         ...VersionsFragment
                     }
@@ -123,4 +108,33 @@ query Subset($projectName: String!, $ids: [String!]!) {
     }
 }
 ${createTypeFragment('version')}
+`
+
+export const VERSION_QUERY = `
+    query Versions($projectName: String!, $ids: [String!]!) {
+        project(name: $projectName) {
+            versions(ids: $ids) {
+                edges {
+                    node {
+                    id
+                    name
+                        subset {
+                            id
+                            name
+                            subType: family
+                        }
+                        task {
+                            id
+                            name
+                            subType: taskType
+                        }
+                        representations{
+                            ...RepresentationsFragment
+                        }
+                    }
+                }
+            }
+        }
+    }
+    ${createTypeFragment('representation')}
 `

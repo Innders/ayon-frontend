@@ -65,11 +65,18 @@ const EntityNode = ({ data, selected, dragging, onAction, id }) => {
     iconDefault = 'help_center',
     type,
     focused,
+    isLeaf,
   } = data || {}
 
   return (
     <>
-      {selected && !dragging && <NodeTools onAction={(a) => onAction(a, { id, ...data })} />}
+      {selected && !dragging && (
+        <NodeTools
+          onAction={(a) => onAction(a, { id, ...data })}
+          isLeaf={isLeaf}
+          isFocus={focused}
+        />
+      )}
       <Handle type="target" position={Position.Left} />
       <StyledNode type={type} isFocus={focused}>
         <StyledDefaultIcon icon={iconDefault} />

@@ -22,7 +22,7 @@ const StyledMenu = styled.div`
   }
 `
 
-const NodeTools = ({ onMouseOut, onAction }) => {
+const NodeTools = ({ onMouseOut, onAction, isLeaf, isFocus }) => {
   const tools = [
     {
       label: 'Delete',
@@ -34,12 +34,14 @@ const NodeTools = ({ onMouseOut, onAction }) => {
       onClick: () => onAction('edit'),
       icon: 'edit',
     },
-    {
+  ]
+
+  if (!isLeaf && !isFocus)
+    tools.push({
       label: 'Focus',
       onClick: () => onAction('focus'),
       icon: 'center_focus_weak',
-    },
-  ]
+    })
 
   return (
     <StyledMenu onMouseOut={onMouseOut}>

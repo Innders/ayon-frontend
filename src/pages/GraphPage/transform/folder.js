@@ -2,7 +2,16 @@
 // icons = icons (folders, families, tasks) from redux
 // type = 'folder' || 'subset' || 'task' || 'version'
 // hierarchy = object of folder ids and folder data
-export const transformFolder = (rawData = [], icons, type, hierarchy = {}) => {
+export const transformFolder = (rawData = [], projectIcons, type, hierarchy = {}) => {
+  const extraIcons = {
+    versions: { def: { icon: 'layers' } },
+    workfiles: { def: { icon: 'home_repair_service' } },
+    representations: { def: { icon: 'view_in_ar' } },
+  }
+
+  // merge icons and extraIcons
+  const icons = { ...projectIcons, ...extraIcons }
+
   const data = [...rawData]
   // transform data into two arrays
   // one for nodes and one for edges
@@ -26,42 +35,71 @@ export const transformFolder = (rawData = [], icons, type, hierarchy = {}) => {
     const entityId = entity.id
     const entityName = entity.name
     // const parentId = entity.parentId
-    const x = columns * 200 + 300
+    const x = columns * 200 + 400
     const y = 100
 
-    // check if there is a parent
+    let inputTypes
+
+    switch (type) {
+      case 'folder':
+        inputTypes = ['folder']
+        break
+      case 'subset':
+        inputTypes = ['folder']
+        break
+      case 'task':
+        inputTypes = ['folder']
+        break
+      case 'version':
+        inputTypes = ['subset', 'task']
+        break
+      default:
+        inputTypes = ['folder']
+        break
+    }
+
+    // check if there is a parent for each input type
     // if there is a parent, add the parent to the nodes
     // and add an edge between the parent and the entity
-    if (entity.parent) {
-      const parentId = entity.parent.id
-      const parentName = entity.parent.name
-      const parentX = x - 200
-      const parentY = y
 
-      // parent node
-      const parentNode = {
-        id: parentId,
-        data: {
-          label: parentName,
-          type: type,
-          subType: entity.subType,
-          icon: icons[type + 's'][entity.subType]?.icon || icons[type + 's']?.def?.icon || 'folder',
-          iconDefault: icons[type + 's']?.def?.icon || 'folder',
-        },
-        position: { x: parentX, y: parentY },
-        sourcePosition: 'right',
-        targetPosition: 'left',
-        type: 'entityNode',
+    inputTypes.forEach((inputType, i) => {
+      if (entity[inputType]) {
+        const input = entity[inputType]
+        const inputId = input.id
+
+        const inputSubType = input.subType
+        const inputName = input.name
+        const inputX = x - 300
+        const inputY = y + i * 100
+
+        // parent node
+        const parentNode = {
+          id: inputId,
+          data: {
+            label: inputName,
+            type: inputType,
+            subType: inputSubType,
+            icon:
+              icons[inputType + 's'][inputSubType]?.icon ||
+              icons[inputType + 's']?.def?.icon ||
+              'folder',
+            iconDefault: icons[inputType + 's']?.def?.icon || 'folder',
+          },
+          position: { x: inputX, y: inputY },
+          sourcePosition: 'right',
+          targetPosition: 'left',
+          type: 'entityNode',
+        }
+        nodes.push(parentNode)
+
+        // create edges
+        edges.push({
+          id: `${inputName}-${entityName}`,
+          source: inputId,
+          target: entityId,
+        })
       }
-      nodes.push(parentNode)
-
-      // create edges
-      edges.push({
-        id: `${parentName}-${entityName}`,
-        source: parentId,
-        target: entityId,
-      })
-    }
+    })
 
     // FOCUSED NODE
     const node = {
@@ -70,7 +108,7 @@ export const transformFolder = (rawData = [], icons, type, hierarchy = {}) => {
         label: entityName,
         type: type,
         subType: entity.subType,
-        icon: icons[type + 's'][entity.subType]?.icon || icons[type + 's']?.def || 'folder',
+        icon: icons[type + 's'][entity.subType]?.icon || icons[type + 's']?.def?.icon || 'folder',
         iconDefault: icons[type + 's']?.def?.icon || 'folder',
         focused: true,
       },
@@ -109,6 +147,7 @@ export const transformFolder = (rawData = [], icons, type, hierarchy = {}) => {
             icon:
               icons[childType + 's']?.[child.subType]?.icon || icons[childType + 's']?.def?.icon,
             iconDefault: icons[childType + 's']?.def?.icon,
+            ...child,
           },
           position: { x: x + 300, y: subY },
           targetPosition: 'left',
@@ -141,12 +180,19 @@ export const transformFolder = (rawData = [], icons, type, hierarchy = {}) => {
       }
     }
 
-    let types = ['folder', 'subset', 'task', 'version']
+    const types = ['folder', 'subset', 'task', 'version', 'representation', 'workfile']
+    const leafs = ['representation', 'workfile']
 
     // add all type output nodes
     types.forEach((type) => {
       if (entity[type + 's']) {
-        createOutputNodes(entity[type + 's'].edges.map((child) => ({ ...child.node, type })))
+        createOutputNodes(
+          entity[type + 's'].edges.map((child) => ({
+            ...child.node,
+            type,
+            isLeaf: leafs.includes(type),
+          })),
+        )
         outputRows += 1
       }
     })

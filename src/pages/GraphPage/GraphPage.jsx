@@ -2,7 +2,10 @@ import React, { useEffect, useMemo } from 'react'
 import 'reactflow/dist/style.css'
 import ReactFlow, { Background, useEdgesState, useNodesState } from 'reactflow'
 import { useSelector } from 'react-redux'
-import { useGetEntitiesGraphQuery } from '/src/services/graph/getGraph'
+import {
+  useGetEntitiesGraphQuery,
+  useLazyGetEntitiesGraphQuery,
+} from '/src/services/graph/getGraph'
 import { ArrayParam, StringParam, useQueryParam, withDefault } from 'use-query-params'
 import { Button } from '@ynput/ayon-react-components'
 import copyToClipboard from '/src/helpers/copyToClipboard'
@@ -49,6 +52,17 @@ const GraphPage = () => {
     },
   )
 
+  const [getGraphEntity] = useLazyGetEntitiesGraphQuery()
+  // we get the inputs and outputs in the background before we click on a node
+  const getEntityCache = async (type, id) => {
+    try {
+      if (!id || !type) return
+      getGraphEntity({ projectName, type, ids: [id] }, true)
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
   const createDataObject = (data = []) => {
     let hierarchyObject = {}
 
@@ -73,7 +87,12 @@ const GraphPage = () => {
   const graphData = useMemo(
     () =>
       !isLoading && (type !== 'folder' || !isHierarchyFetching)
-        ? transformFolder(data, { folders, tasks, subsets: families }, type, hierarchyObjectData)
+        ? transformFolder(
+            data,
+            { folders, tasks, subsets: families, versions: { def: { icon: 'layers' } } },
+            type,
+            hierarchyObjectData,
+          )
         : [],
     [data, isHierarchyFetching, isLoading, hierarchyObjectData],
   )
@@ -89,8 +108,11 @@ const GraphPage = () => {
       const { nodes = [], edges = [] } = graphData || {}
       setNodes(nodes)
       setEdges(edges)
+
+      // get other nodes data in the background
+      nodes.forEach(({ data: { type, isLeaf }, id }) => !isLeaf && getEntityCache(type, id))
     }
-  }, [isLoading, isSuccess, graphData])
+  }, [isLoading, isSuccess, graphData, type])
 
   const handleFocus = (node) => {
     if (!node) return

@@ -43,4 +43,4 @@ const getGraph = ayonApi.injectEndpoints({
   }),
 })
 
-export const { useGetEntitiesGraphQuery } = getGraph
+export const { useGetEntitiesGraphQuery, useLazyGetEntitiesGraphQuery } = getGraph
