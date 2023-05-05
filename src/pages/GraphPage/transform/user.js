@@ -38,7 +38,7 @@ export const transformUser = (rawData = [], icons, users = []) => {
   data.forEach((user) => {
     const entityId = user.name
     // const parentId = user.parentId
-    const x = columns * 200 + 400
+    const x = columns * 500 + 400
     const y = 100
 
     // FOCUSED NODE
