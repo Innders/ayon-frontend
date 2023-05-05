@@ -15,13 +15,14 @@ const getSubType = (type) => {
   }
 }
 
-const createTypeFragment = (type) => `
+const createTypeFragment = (type, extra) => `
     fragment ${capitalize(type)}sFragment on ${capitalize(type)}sConnection {
         edges {
             node {
                 id
                 name
                 ${getSubType(type) ? 'subType: ' + getSubType(type) : ''}
+                ${extra ? extra : ''}
             }
         }
     }`
@@ -140,8 +141,16 @@ export const VERSION_QUERY = `
     ${createTypeFragment('representation')}
 `
 
+const USER_TASKS_QUERY = `
+    folder {
+        id
+        name
+        subType: folderType
+    }
+`
+
 export const USERS_QUERY = `
-    query Users($names: [String!]) {
+    query Users($names: [String!], $projectName: String!) {
         users(names: $names) {
             edges {
                 node {
@@ -150,8 +159,12 @@ export const USERS_QUERY = `
                         fullName
                         avatarUrl
                     }
+                    tasks(projectName: $projectName) {
+                            ...TasksFragment
+                      }
                 }
             }
         }
     }
+    ${createTypeFragment('task', USER_TASKS_QUERY)}
 `

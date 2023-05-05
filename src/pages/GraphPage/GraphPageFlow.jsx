@@ -4,6 +4,7 @@ import ReactFlow, { Background, useEdgesState, useNodesState, useReactFlow } fro
 import { useSelector } from 'react-redux'
 import {
   useGetEntitiesGraphQuery,
+  useGetUsersGraphQuery,
   useLazyGetEntitiesGraphQuery,
   useLazyGetUsersGraphQuery,
 } from '/src/services/graph/getGraph'
@@ -17,6 +18,7 @@ import { ThemeProvider } from 'styled-components'
 import theme from './theme'
 import UserNode from '/src/components/Graph/UserNode'
 import { useNavigate } from 'react-router'
+import { transformUser } from './transform/user'
 
 const GraphPageFlow = () => {
   const reactFlowInstance = useReactFlow()
@@ -56,11 +58,14 @@ const GraphPageFlow = () => {
       ids: ids,
     },
     {
-      skip: !projectName || !type || !ids.length,
+      skip: !projectName || !type || !ids.length || type === 'user',
     },
   )
 
-  // const { data: usersData = [] } = useGetUsersGraphQuery({ users: ids }, { skip: type !== 'user' })
+  const { data: usersData = [], isFetching: isFetchingUsers } = useGetUsersGraphQuery(
+    { names: ids, projectName },
+    { skip: type !== 'user' || !ids.length },
+  )
 
   const createDataObject = (data = []) => {
     let hierarchyObject = {}
@@ -93,7 +98,7 @@ const GraphPageFlow = () => {
     // get users data, then update the graph
     try {
       if (!names.length) return
-      const res = await getGraphUser({ names }, true).unwrap()
+      const res = await getGraphUser({ names, projectName }, true).unwrap()
       return res
     } catch (error) {
       console.error(error)
@@ -116,45 +121,64 @@ const GraphPageFlow = () => {
     }
   }
 
-  const updateGraphWithData = async () => {
-    if (!isFetching && isSuccess) {
-      let users = []
-      // if type is task, get users
-      if (type === 'task' && isSuccess) {
-        // get assignees names from data
-        const names = data.map(({ node: { assignees } }) => assignees).flat()
-        users = await getUsersData(names)
-      }
+  const updateGraphWithData = async (data = {}) => {
+    const { nodes = [], edges = [] } = data || {}
 
-      // only transform data once we have all the data
-      if (type !== 'folder' || !isHierarchyFetching) {
-        // transform data to graph data
-        const graphData = transformEntity(
-          data,
-          { folders, tasks, subsets: families, versions: { def: { icon: 'layers' } } },
-          type,
-          hierarchyObjectData,
-          users,
-        )
-        const { nodes = [], edges = [] } = graphData || {}
+    // Finally update graph
+    setNodes(nodes)
+    setEdges(edges)
 
-        // Finally update graph
-        setNodes(nodes)
-        setEdges(edges)
+    // get other nodes data in the background
+    nodes.forEach(
+      ({ data: { type, isLeaf }, id }) => !isLeaf && type !== 'user' && getEntityCache(type, id),
+    )
+  }
 
-        // get other nodes data in the background
-        nodes.forEach(
-          ({ data: { type, isLeaf }, id }) =>
-            !isLeaf && type !== 'user' && getEntityCache(type, id),
-        )
-      }
+  const transformEntityData = async () => {
+    let users = usersData
+    // if type is task, get users
+    if (type === 'task' && isSuccess) {
+      // get assignees names from data
+      const names = data.map(({ node: { assignees } }) => assignees).flat()
+      users = await getUsersData(names)
     }
+
+    // only transform data once we have all the data
+    if (type !== 'folder' || !isHierarchyFetching) {
+      // transform data to graph data
+      const graphData = transformEntity(
+        type === 'user' ? usersData : data,
+        { folders, tasks, subsets: families },
+        type,
+        hierarchyObjectData,
+        users,
+      )
+
+      updateGraphWithData(graphData)
+    }
+  }
+
+  const transformUserData = () => {
+    const graphData = transformUser(usersData, { folders, tasks })
+
+    updateGraphWithData(graphData)
   }
 
   // set node based off focused context
   useEffect(() => {
-    updateGraphWithData()
+    if (!isFetching && isSuccess) {
+      transformEntityData()
+    }
   }, [isFetching, isSuccess, data, isHierarchyFetching, hierarchyObjectData])
+
+  // set user node
+  useEffect(() => {
+    if (type !== 'user') return
+
+    if (!isFetchingUsers && usersData.length) {
+      transformUserData()
+    }
+  }, [isFetchingUsers, usersData])
 
   useEffect(() => {
     // when nodes changes fit to bounds

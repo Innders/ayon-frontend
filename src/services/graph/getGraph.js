@@ -41,12 +41,12 @@ const getGraph = ayonApi.injectEndpoints({
       transformErrorResponse: (error) => error.data?.detail || `Error ${error.status}`,
     }),
     getUsersGraph: build.query({
-      query: ({ names }) => ({
+      query: ({ names, projectName }) => ({
         url: '/graphql',
         method: 'POST',
         body: {
           query: USERS_QUERY,
-          variables: { names },
+          variables: { names, projectName },
         },
       }),
       transformResponse: (res) => res?.data?.users.edges.map((e) => e.node),

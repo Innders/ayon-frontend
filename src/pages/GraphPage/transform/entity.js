@@ -1,6 +1,6 @@
 import { createUserNode } from './user'
 
-const createEntityNode = (entity, type, icons, data) => ({
+export const createEntityNode = (entity, type, icons, data) => ({
   id: entity.id,
   type: 'entityNode',
   data: {
@@ -46,8 +46,10 @@ export const transformEntity = (rawData = [], projectIcons, type, hierarchy = {}
   let outputRows = 0
 
   // add nodes
-  data.forEach(({ node: entity }) => {
-    const entityId = entity.id
+  data.forEach((fNode) => {
+    console.log(fNode)
+    const entity = type === 'user' ? fNode : fNode?.node
+    const entityId = entity.id || entity.name
     // const parentId = entity.parentId
     const x = columns * 200 + 400
     const y = 100
@@ -66,6 +68,9 @@ export const transformEntity = (rawData = [], projectIcons, type, hierarchy = {}
         break
       case 'version':
         inputTypes = ['subset', 'task']
+        break
+      case 'user':
+        inputTypes = []
         break
       default:
         inputTypes = ['folder']
@@ -105,9 +110,12 @@ export const transformEntity = (rawData = [], projectIcons, type, hierarchy = {}
     // FOCUSED NODE
     const node = {
       id: entityId,
-      ...createEntityNode(entity, type, icons, { focused: true }),
+      ...(type === 'user'
+        ? createUserNode(entity, { focused: true })
+        : createEntityNode(entity, type, icons, { focused: true })),
       position: { x, y },
     }
+
     nodes.push(node)
 
     columns += 1
@@ -187,7 +195,7 @@ export const transformEntity = (rawData = [], projectIcons, type, hierarchy = {}
     })
 
     // add all user output nodes
-    if (users.length) {
+    if (users.length && type !== 'user') {
       const usersData = users.map((user) => ({
         ...user,
         type: 'user',
