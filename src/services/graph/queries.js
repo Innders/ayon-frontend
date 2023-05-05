@@ -1,3 +1,5 @@
+import { capitalize } from 'lodash'
+
 export const TASK_QUERY = `
   query Tasks($projectName: String!, $ids: [String!]!) {
       project(name: $projectName) {
@@ -15,27 +17,30 @@ export const TASK_QUERY = `
   }
 `
 
-// fragment for workfiles
-export const WORKFILES_FRAGMENT = `
-    fragment WorkfilesFragment on WorkfilesConnection {
+const getSubType = (type) => {
+  switch (type) {
+    case 'task':
+      return 'taskType'
+    case 'subset':
+      return 'family'
+    case 'folder':
+      return 'folderType'
+    case 'version':
+      return ''
+    default:
+      return ''
+  }
+}
+
+const createTypeFragment = (type) => `
+    fragment ${capitalize(type)}sFragment on ${capitalize(type)}sConnection {
         edges {
             node {
                 id
                 name
+                ${getSubType(type) ? 'subType: ' + getSubType(type) : ''}
             }
         }
-
-    }`
-// fragment for versions
-export const VERSIONS_FRAGMENT = `
-    fragment VersionsFragment on VersionsConnection {
-        edges {
-            node {
-                id
-                name
-            }
-        }
-
     }`
 
 export const FOLDER_QUERY = `
@@ -46,31 +51,25 @@ export const FOLDER_QUERY = `
                     node {
                         id
                         name
-                        folderType
-                        parents
+                        hasChildren
+                        subType: folderType
+                        parent{
+                            id
+                            name
+                        }
                         subsets {
-                          edges {
-                            node {
-                              name
-                              id
-                              family
-                            }
-                          }
+                            ...SubsetsFragment
                         }
                         tasks {
-                          edges {
-                            node {
-                              name
-                              id
-                              taskType
-                            }
-                          }
+                            ...TasksFragment
                         }
                     }
                 }
             }
         }
     }
+    ${createTypeFragment('task')}
+    ${createTypeFragment('subset')}
 `
 
 export const VERSION_QUERY = `
@@ -107,31 +106,21 @@ export const VERSION_QUERY = `
 `
 
 export const SUBSET_QUERY = `
-query Subset($projectName: String!, $ids: [String!]!, $versionOverrides: [String!]!) {
+query Subset($projectName: String!, $ids: [String!]!) {
     project(name: $projectName){
         subsets(ids: $ids){
             edges {
                 node {
                     id
                     name
-                    versionList{
-                      id
-                      version
-                      name
-                    }
-                    versions(){
-                      edges{
-                        node{
-                          id
-                          version
-                          name
-                          taskId
-                        }
-                      }
+                    folderId
+                    versions {
+                        ...VersionsFragment
                     }
                 }
             }
         }
     }
 }
+${createTypeFragment('version')}
 `

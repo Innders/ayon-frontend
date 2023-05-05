@@ -22,21 +22,21 @@ const StyledMenu = styled.div`
   }
 `
 
-const NodeTools = ({ onMouseOut }) => {
+const NodeTools = ({ onMouseOut, onAction }) => {
   const tools = [
     {
       label: 'Delete',
-      onClick: () => console.log('delete'),
+      onClick: () => onAction('delete'),
       icon: 'delete',
     },
     {
       label: 'Edit',
-      onClick: () => console.log('edit'),
+      onClick: () => onAction('edit'),
       icon: 'edit',
     },
     {
       label: 'Focus',
-      onClick: () => console.log('focus'),
+      onClick: () => onAction('focus'),
       icon: 'center_focus_weak',
     },
   ]

@@ -32,29 +32,23 @@ const StyledNode = styled.div`
     }
   }
 
-  /* set styles for type */
-  ${({ type }) => {
-    switch (type) {
-      case 'folder':
-        return css`
-          background-color: hsla(209, 100%, 80%, 1);
-        `
-      case 'subset':
-        return css`
-          background-color: hsla(32, 100%, 80%, 1);
-        `
-      case 'task':
-        return css`
-          background-color: hsla(122, 72%, 85%, 1);
-        `
-      case 'version':
-        return css`
-          background-color: hsla(335, 86%, 80%, 1);
-        `
-      default:
-        return ''
+  /* if isFocused, white border */
+  ${({ isFocus, theme, type }) => {
+    if (isFocus) {
+      // 'hsla(335, 86%, 80%, 1)'
+      const color = theme?.[type]?.primary
+      // set s 100% and l 50%
+      const borderColor = color.replace(/(\d+),\s*(\d+)%\s*,\s*(\d+)%/, '$1, 100%, 50%')
+
+      return css`
+        border: 2px solid ${borderColor};
+        padding: 6px;
+        padding-right: 22px;
+      `
     }
   }}
+
+  background-color: ${({ theme, type }) => theme?.[type]?.primary};
 `
 
 const StyledDefaultIcon = styled(Icon)`
@@ -64,16 +58,20 @@ const StyledDefaultIcon = styled(Icon)`
   font-size: 120%;
 `
 
-const EntityNode = ({ data, selected, dragging }) => {
-  const { label = '', icon = 'help_center', iconDefault = 'help_center', type } = data || {}
-
-  if (selected) console.log('selected')
+const EntityNode = ({ data, selected, dragging, onAction, id }) => {
+  const {
+    label = '',
+    icon = 'help_center',
+    iconDefault = 'help_center',
+    type,
+    focused,
+  } = data || {}
 
   return (
     <>
-      {selected && !dragging && <NodeTools />}
+      {selected && !dragging && <NodeTools onAction={(a) => onAction(a, { id, ...data })} />}
       <Handle type="target" position={Position.Left} />
-      <StyledNode type={type}>
+      <StyledNode type={type} isFocus={focused}>
         <StyledDefaultIcon icon={iconDefault} />
         <Icon icon={icon} />
 

@@ -1,4 +1,8 @@
-export const transformFolder = (rawData = [], folders, subsets, tasks) => {
+// rawData = data from graphql
+// icons = icons (folders, families, tasks) from redux
+// type = 'folder' || 'subset' || 'task' || 'version'
+// hierarchy = object of folder ids and folder data
+export const transformFolder = (rawData = [], icons, type, hierarchy = {}) => {
   const data = [...rawData]
   // transform data into two arrays
   // one for nodes and one for edges
@@ -14,29 +18,61 @@ export const transformFolder = (rawData = [], folders, subsets, tasks) => {
   data.sort((a, b) => a?.node?.parents?.length - b?.node?.parents?.length)
 
   // keep track if which rows are taken
-  let rows = 0
-
-  // keep track of which parents have been connected
-  const connectedParents = {}
+  let columns = 0
+  let outputRows = 0
 
   // add nodes
   data.forEach(({ node: entity }) => {
     const entityId = entity.id
     const entityName = entity.name
-    const entityParents = entity.parents
-    const depth = entityParents.length
-    const x = rows * 200 + 50
-    const y = 50 * depth + 100
+    // const parentId = entity.parentId
+    const x = columns * 200 + 300
+    const y = 100
 
-    // FOLDER NODE
+    // check if there is a parent
+    // if there is a parent, add the parent to the nodes
+    // and add an edge between the parent and the entity
+    if (entity.parent) {
+      const parentId = entity.parent.id
+      const parentName = entity.parent.name
+      const parentX = x - 200
+      const parentY = y
+
+      // parent node
+      const parentNode = {
+        id: parentId,
+        data: {
+          label: parentName,
+          type: type,
+          subType: entity.subType,
+          icon: icons[type + 's'][entity.subType]?.icon || icons[type + 's']?.def?.icon || 'folder',
+          iconDefault: icons[type + 's']?.def?.icon || 'folder',
+        },
+        position: { x: parentX, y: parentY },
+        sourcePosition: 'right',
+        targetPosition: 'left',
+        type: 'entityNode',
+      }
+      nodes.push(parentNode)
+
+      // create edges
+      edges.push({
+        id: `${parentName}-${entityName}`,
+        source: parentId,
+        target: entityId,
+      })
+    }
+
+    // FOCUSED NODE
     const node = {
       id: entityId,
       data: {
         label: entityName,
-        type: 'folder',
-        subType: entity.folderType,
-        icon: folders[entity.folderType]?.icon || folders?.def || 'folder',
-        iconDefault: folders?.def?.icon || 'folder',
+        type: type,
+        subType: entity.subType,
+        icon: icons[type + 's'][entity.subType]?.icon || icons[type + 's']?.def || 'folder',
+        iconDefault: icons[type + 's']?.def?.icon || 'folder',
+        focused: true,
       },
       position: { x, y },
       sourcePosition: 'right',
@@ -45,61 +81,36 @@ export const transformFolder = (rawData = [], folders, subsets, tasks) => {
     }
     nodes.push(node)
 
-    rows += 1
+    columns += 1
 
-    // check to see if any other nodes are this node's parent
-    // if so, add an edge
-    data.forEach(({ node: p }) => {
-      if (p.id === entityId) return
+    let outputNodesCount = 0
 
-      if (entityParents.includes(p.name)) {
-        const parents = connectedParents[p.name]
-
-        // if the parent includes any of the other entity's parents, don't add
-        const isAddEdge = parents ? !parents.some((parent) => entityParents.includes(parent)) : true
-
-        if (!isAddEdge) return
-
-        edges.push({
-          id: `${p.name}-${entityName}`,
-          source: p.id,
-          target: entityId,
-        })
-
-        if (parents) {
-          // add to existing array
-          connectedParents[p.name].push(entityName)
-        } else {
-          // create new array
-          connectedParents[p.name] = [entityName]
-        }
-      }
-    })
-
-    const createNodesAndEdges = (e) => {
+    const createOutputNodes = (e) => {
       // add to nodes
-      e.forEach((edge, i) => {
-        const type = edge.node.taskType ? 'task' : 'subset'
-        const edgeId = edge.node.id
-        const edgeName = edge.node.name
-        let subY = i * 50 + 100 + y
-        if (type === 'task') {
-          subY += 100
-        }
+      e.forEach((child) => {
+        // add to count
+        const childType = child.type
+        const childId = child.id
+        const childName = child.name
+
+        // use the count to determine the y position
+        let subY = outputNodesCount * 50 + 100
+        // offset y by outputRows
+        subY += outputRows * 50
+
+        outputNodesCount += 1
 
         // child node
         const node = {
-          id: edgeId,
+          id: childId,
           data: {
-            label: edgeName,
-            type,
+            label: childName,
+            type: childType,
             icon:
-              type === 'task'
-                ? tasks?.[edge.node.taskType]?.icon || tasks?.def?.icon
-                : subsets?.[edge.node.family]?.icon || subsets?.def?.icon,
-            iconDefault: type === 'task' ? tasks?.def?.icon : subsets?.def?.icon,
+              icons[childType + 's']?.[child.subType]?.icon || icons[childType + 's']?.def?.icon,
+            iconDefault: icons[childType + 's']?.def?.icon,
           },
-          position: { x: x + 200, y: subY },
+          position: { x: x + 300, y: subY },
           targetPosition: 'left',
           sourcePosition: 'right',
           type: 'entityNode',
@@ -108,21 +119,39 @@ export const transformFolder = (rawData = [], folders, subsets, tasks) => {
 
         // create edges
         edges.push({
-          id: `${entityName}-${edgeName}`,
+          id: `${entityName}-${childName}`,
           source: entityId,
-          target: edgeId,
+          target: childId,
         })
       })
     }
 
-    const e = [...entity.subsets.edges, ...entity.tasks.edges]
-
-    if (e.length) {
-      // add subsets and tasks
-      createNodesAndEdges(e)
-
-      rows += 1
+    // folders can have child folders, but we need to extract them from hierarchy
+    if (type === 'folder' && entity.hasChildren) {
+      const folderNode = hierarchy[entityId]
+      if (folderNode?.children?.length) {
+        createOutputNodes(
+          folderNode?.children?.map((child) => ({
+            ...child,
+            type: 'folder',
+            subType: child.folderType,
+          })),
+        )
+        outputRows += 1
+      }
     }
+
+    let types = ['folder', 'subset', 'task', 'version']
+
+    // add all type output nodes
+    types.forEach((type) => {
+      if (entity[type + 's']) {
+        createOutputNodes(entity[type + 's'].edges.map((child) => ({ ...child.node, type })))
+        outputRows += 1
+      }
+    })
+
+    if (outputNodesCount) columns += 1
   })
 
   return { nodes, edges }

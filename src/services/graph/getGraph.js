@@ -1,15 +1,7 @@
 import { ayonApi } from '../ayon'
 import { FOLDER_QUERY, SUBSET_QUERY, TASK_QUERY, VERSION_QUERY } from './queries'
-import ayonClient from '/src/ayon'
 
-const buildEntitiesQuery = (type, attribs) => {
-  let f_attribs = attribs || ''
-  if (!attribs) {
-    for (const attrib of ayonClient.settings.attributes) {
-      if (attrib.scope.includes(type)) f_attribs += `${attrib.name}\n`
-    }
-  }
-
+const buildEntitiesQuery = (type) => {
   let QUERY
   switch (type) {
     case 'task':
@@ -30,24 +22,18 @@ const buildEntitiesQuery = (type, attribs) => {
 
   if (!QUERY) return null
 
-  return QUERY.replace('#ATTRS#', f_attribs)
+  return QUERY
 }
 
 const getGraph = ayonApi.injectEndpoints({
   endpoints: (build) => ({
     getEntitiesGraph: build.query({
-      query: ({
-        projectName,
-        ids,
-        type,
-        versionOverrides = ['00000000000000000000000000000000'],
-        attribs,
-      }) => ({
+      query: ({ projectName, ids, type }) => ({
         url: '/graphql',
         method: 'POST',
         body: {
-          query: buildEntitiesQuery(type, attribs),
-          variables: { projectName, ids, versionOverrides },
+          query: buildEntitiesQuery(type),
+          variables: { projectName, ids },
         },
       }),
       transformResponse: (response, meta, { type }) =>
