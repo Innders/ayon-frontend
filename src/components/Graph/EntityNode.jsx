@@ -3,7 +3,7 @@ import { Handle, Position } from 'reactflow'
 import styled, { css } from 'styled-components'
 import NodeTools from '/src/pages/GraphPage/NodeTools'
 
-const StyledNode = styled.div`
+export const StyledNode = styled.div`
   background-color: #fff;
   padding: 8px 8px;
   padding-right: 24px;
@@ -23,6 +23,7 @@ const StyledNode = styled.div`
     position: absolute;
     inset: 0;
     content: '';
+    border-radius: var(--border-radius);
   }
 
   /* when hovering lighten using ::after */
@@ -81,10 +82,9 @@ const EntityNode = ({ data, selected, dragging, onAction, id }) => {
       <StyledNode type={type} isFocus={focused}>
         <StyledDefaultIcon icon={iconDefault} />
         <Icon icon={icon} />
-
         <span>{label}</span>
       </StyledNode>
-      <Handle type="source" position={Position.Right} />
+      {!isLeaf && <Handle type="source" position={Position.Right} />}
     </>
   )
 }

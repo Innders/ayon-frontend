@@ -1,8 +1,23 @@
+import { createUserNode } from './user'
+
+const createEntityNode = (entity, type, icons, data) => ({
+  id: entity.id,
+  type: 'entityNode',
+  data: {
+    label: entity.name,
+    type: type,
+    icon: icons[type + 's']?.[entity.subType]?.icon || icons[type + 's']?.def?.icon,
+    iconDefault: icons[type + 's']?.def?.icon,
+    ...entity,
+    ...data,
+  },
+})
+
 // rawData = data from graphql
 // icons = icons (folders, families, tasks) from redux
 // type = 'folder' || 'subset' || 'task' || 'version'
 // hierarchy = object of folder ids and folder data
-export const transformFolder = (rawData = [], projectIcons, type, hierarchy = {}) => {
+export const transformEntity = (rawData = [], projectIcons, type, hierarchy = {}, users = []) => {
   const extraIcons = {
     versions: { def: { icon: 'layers' } },
     workfiles: { def: { icon: 'home_repair_service' } },
@@ -67,7 +82,6 @@ export const transformFolder = (rawData = [], projectIcons, type, hierarchy = {}
         const input = entity[inputType]
         const inputId = input.id
 
-        const inputSubType = input.subType
         const inputName = input.name
         const inputX = x - 300
         const inputY = y + i * 100
@@ -75,20 +89,8 @@ export const transformFolder = (rawData = [], projectIcons, type, hierarchy = {}
         // parent node
         const parentNode = {
           id: inputId,
-          data: {
-            label: inputName,
-            type: inputType,
-            subType: inputSubType,
-            icon:
-              icons[inputType + 's'][inputSubType]?.icon ||
-              icons[inputType + 's']?.def?.icon ||
-              'folder',
-            iconDefault: icons[inputType + 's']?.def?.icon || 'folder',
-          },
+          ...createEntityNode(input, inputType, icons),
           position: { x: inputX, y: inputY },
-          sourcePosition: 'right',
-          targetPosition: 'left',
-          type: 'entityNode',
         }
         nodes.push(parentNode)
 
@@ -104,18 +106,8 @@ export const transformFolder = (rawData = [], projectIcons, type, hierarchy = {}
     // FOCUSED NODE
     const node = {
       id: entityId,
-      data: {
-        label: entityName,
-        type: type,
-        subType: entity.subType,
-        icon: icons[type + 's'][entity.subType]?.icon || icons[type + 's']?.def?.icon || 'folder',
-        iconDefault: icons[type + 's']?.def?.icon || 'folder',
-        focused: true,
-      },
+      ...createEntityNode(entity, type, icons, { focused: true }),
       position: { x, y },
-      sourcePosition: 'right',
-      targetPosition: 'left',
-      type: 'entityNode',
     }
     nodes.push(node)
 
@@ -125,42 +117,40 @@ export const transformFolder = (rawData = [], projectIcons, type, hierarchy = {}
 
     const createOutputNodes = (e) => {
       // add to nodes
-      e.forEach((child) => {
+      e.forEach((child, i) => {
         // add to count
         const childType = child.type
         const childId = child.id
         const childName = child.name
+        let gap = 50
 
         // use the count to determine the y position
-        let subY = outputNodesCount * 50 + 100
+        let subY = outputNodesCount * gap + 100
         // offset y by outputRows
-        subY += outputRows * 50
+        subY += outputRows * gap
 
         outputNodesCount += 1
 
+        if (childType === 'user') {
+          // over ride and put users above
+          subY = i * gap - 50
+        }
+
         // child node
         const node = {
-          id: childId,
-          data: {
-            label: childName,
-            type: childType,
-            icon:
-              icons[childType + 's']?.[child.subType]?.icon || icons[childType + 's']?.def?.icon,
-            iconDefault: icons[childType + 's']?.def?.icon,
-            ...child,
-          },
+          ...(childType === 'user'
+            ? createUserNode(child)
+            : createEntityNode(child, childType, icons)),
           position: { x: x + 300, y: subY },
-          targetPosition: 'left',
-          sourcePosition: 'right',
-          type: 'entityNode',
         }
+
         nodes.push(node)
 
         // create edges
         edges.push({
           id: `${entityName}-${childName}`,
           source: entityId,
-          target: childId,
+          target: childId || childName,
         })
       })
     }
@@ -196,6 +186,16 @@ export const transformFolder = (rawData = [], projectIcons, type, hierarchy = {}
         outputRows += 1
       }
     })
+
+    // add all user output nodes
+    if (users.length) {
+      const usersData = users.map((user) => ({
+        ...user,
+        type: 'user',
+      }))
+      createOutputNodes(usersData)
+      outputRows += 1
+    }
 
     if (outputNodesCount) columns += 1
   })

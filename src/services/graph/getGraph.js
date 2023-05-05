@@ -1,5 +1,5 @@
 import { ayonApi } from '../ayon'
-import { FOLDER_QUERY, SUBSET_QUERY, TASK_QUERY, VERSION_QUERY } from './queries'
+import { FOLDER_QUERY, SUBSET_QUERY, TASK_QUERY, USERS_QUERY, VERSION_QUERY } from './queries'
 
 const buildEntitiesQuery = (type) => {
   let QUERY
@@ -40,7 +40,27 @@ const getGraph = ayonApi.injectEndpoints({
         response.data ? response.data.project[type + 's'].edges : [],
       transformErrorResponse: (error) => error.data?.detail || `Error ${error.status}`,
     }),
+    getUsersGraph: build.query({
+      query: ({ names }) => ({
+        url: '/graphql',
+        method: 'POST',
+        body: {
+          query: USERS_QUERY,
+          variables: { names },
+        },
+      }),
+      transformResponse: (res) => res?.data?.users.edges.map((e) => e.node),
+      providesTags: (res) =>
+        res?.data?.users
+          ? [...res.data.users.edges.map((e) => ({ type: 'user', id: e.name }))]
+          : ['user'],
+    }),
   }),
 })
 
-export const { useGetEntitiesGraphQuery, useLazyGetEntitiesGraphQuery } = getGraph
+export const {
+  useGetEntitiesGraphQuery,
+  useLazyGetEntitiesGraphQuery,
+  useLazyGetUsersGraphQuery,
+  useGetUsersGraphQuery,
+} = getGraph

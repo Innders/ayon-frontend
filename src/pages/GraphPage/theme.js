@@ -11,6 +11,9 @@ const theme = {
   version: {
     primary: 'hsla(335, 86%, 80%, 1)',
   },
+  user: {
+    primary: 'hsla(256, 100%, 80%, 1)',
+  },
 }
 
 export default theme

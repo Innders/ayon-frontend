@@ -75,6 +75,7 @@ export const TASK_QUERY = `
                         workfiles {
                             ...WorkfilesFragment
                         }
+                        assignees
                   }
               }
           }
@@ -137,4 +138,20 @@ export const VERSION_QUERY = `
         }
     }
     ${createTypeFragment('representation')}
+`
+
+export const USERS_QUERY = `
+    query Users($names: [String!]) {
+        users(names: $names) {
+            edges {
+                node {
+                    name
+                    attrib {
+                        fullName
+                        avatarUrl
+                    }
+                }
+            }
+        }
+    }
 `

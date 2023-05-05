@@ -5,15 +5,17 @@ import { useSelector } from 'react-redux'
 import {
   useGetEntitiesGraphQuery,
   useLazyGetEntitiesGraphQuery,
+  useLazyGetUsersGraphQuery,
 } from '/src/services/graph/getGraph'
 import { ArrayParam, StringParam, useQueryParam, withDefault } from 'use-query-params'
 import { Button } from '@ynput/ayon-react-components'
 import copyToClipboard from '/src/helpers/copyToClipboard'
 import EntityNode from '/src/components/Graph/EntityNode'
-import { transformFolder } from './transform'
+import { transformEntity } from './transform'
 import { useGetHierarchyQuery } from '/src/services/getHierarchy'
 import { ThemeProvider } from 'styled-components'
 import theme from './theme'
+import UserNode from '/src/components/Graph/UserNode'
 
 const GraphPage = () => {
   const { name: projectName, folders, tasks, families } = useSelector((state) => state.project)
@@ -39,7 +41,7 @@ const GraphPage = () => {
   // QUERIES
   const {
     data = [],
-    isLoading,
+    isFetching,
     isSuccess,
   } = useGetEntitiesGraphQuery(
     {
@@ -51,6 +53,8 @@ const GraphPage = () => {
       skip: !projectName || !type || !ids.length,
     },
   )
+
+  // const { data: usersData = [] } = useGetUsersGraphQuery({ users: ids }, { skip: type !== 'user' })
 
   const [getGraphEntity] = useLazyGetEntitiesGraphQuery()
   // we get the inputs and outputs in the background before we click on a node
@@ -83,36 +87,63 @@ const GraphPage = () => {
     }
   }, [hierarchyData])
 
-  // transform data into nodes and edges
-  const graphData = useMemo(
-    () =>
-      !isLoading && (type !== 'folder' || !isHierarchyFetching)
-        ? transformFolder(
-            data,
-            { folders, tasks, subsets: families, versions: { def: { icon: 'layers' } } },
-            type,
-            hierarchyObjectData,
-          )
-        : [],
-    [data, isHierarchyFetching, isLoading, hierarchyObjectData],
-  )
-
   // eslint-disable-next-line no-unused-vars
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   // eslint-disable-next-line no-unused-vars
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
 
+  const [getGraphUser] = useLazyGetUsersGraphQuery()
+
+  const getUsersData = async (names = []) => {
+    // get users data, then update the graph
+    try {
+      if (!names.length) return
+      const res = await getGraphUser({ names }, true).unwrap()
+      return res
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  const updateGraphWithData = async () => {
+    if (!isFetching && isSuccess) {
+      let users = []
+      // if type is task, get users
+      if (type === 'task' && isSuccess) {
+        // get assignees names from data
+        const names = data.map(({ node: { assignees } }) => assignees).flat()
+        users = await getUsersData(names)
+      }
+
+      // only transform data once we have all the data
+      if (type !== 'folder' || !isHierarchyFetching) {
+        // transform data to graph data
+        const graphData = transformEntity(
+          data,
+          { folders, tasks, subsets: families, versions: { def: { icon: 'layers' } } },
+          type,
+          hierarchyObjectData,
+          users,
+        )
+        const { nodes = [], edges = [] } = graphData || {}
+
+        // Finally update graph
+        setNodes(nodes)
+        setEdges(edges)
+
+        // get other nodes data in the background
+        nodes.forEach(
+          ({ data: { type, isLeaf }, id }) =>
+            !isLeaf && type !== 'user' && getEntityCache(type, id),
+        )
+      }
+    }
+  }
+
   // set node based off focused context
   useEffect(() => {
-    if (!isLoading && isSuccess) {
-      const { nodes = [], edges = [] } = graphData || {}
-      setNodes(nodes)
-      setEdges(edges)
-
-      // get other nodes data in the background
-      nodes.forEach(({ data: { type, isLeaf }, id }) => !isLeaf && getEntityCache(type, id))
-    }
-  }, [isLoading, isSuccess, graphData, type])
+    updateGraphWithData()
+  }, [isFetching, isSuccess, data, isHierarchyFetching, hierarchyObjectData])
 
   const handleFocus = (node) => {
     if (!node) return
@@ -137,6 +168,7 @@ const GraphPage = () => {
   const nodeTypes = useMemo(
     () => ({
       entityNode: (data) => EntityNode({ ...data, onAction: handleAction }),
+      userNode: (data) => UserNode({ ...data, onAction: handleAction }),
     }),
     [],
   )
