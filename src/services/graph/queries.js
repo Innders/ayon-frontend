@@ -142,6 +142,7 @@ export const VERSION_QUERY = `
 `
 
 const USER_TASKS_QUERY = `
+    assignees
     folder {
         id
         name

@@ -15,7 +15,7 @@ export const createUserNode = (user = {}, data = {}) => ({
 // icons = icons (folders, families, tasks) from redux
 // type = 'folder' || 'subset' || 'task' || 'version'
 // hierarchy = object of folder ids and folder data
-export const transformUser = (rawData = [], icons) => {
+export const transformUser = (rawData = [], icons, users = []) => {
   const data = [...rawData]
   // transform data into two arrays
   // one for nodes and one for edges
@@ -131,6 +131,32 @@ export const transformUser = (rawData = [], icons) => {
     })
 
     if (outputNodesCount) columns += 1
+  })
+
+  // add users that are on the same tasks
+  users.forEach((user, i) => {
+    const userY = 200 + i * 50
+    // create a node for user
+    const node = {
+      ...createUserNode(user),
+      position: { x: 400, y: userY },
+    }
+
+    nodes.push(node)
+
+    console.log(user)
+
+    // attach user to it's tasks
+    user.tasks?.edges.forEach(({ node: { id } }) => {
+      edges.push({
+        id: `${user.name}-${id}`,
+        source: user.name,
+        target: id,
+        style: {
+          opacity: 0.2,
+        },
+      })
+    })
   })
 
   return { nodes, edges }

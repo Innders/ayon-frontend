@@ -64,7 +64,7 @@ const GraphPageFlow = () => {
 
   const { data: usersData = [], isFetching: isFetchingUsers } = useGetUsersGraphQuery(
     { names: ids, projectName },
-    { skip: type !== 'user' || !ids.length },
+    { skip: type !== 'user' || !ids.length || !projectName },
   )
 
   const createDataObject = (data = []) => {
@@ -158,8 +158,21 @@ const GraphPageFlow = () => {
     }
   }
 
-  const transformUserData = () => {
-    const graphData = transformUser(usersData, { folders, tasks })
+  const transformUserData = async () => {
+    let names = []
+
+    // get assignees names from data
+    // these are other users that are assigned to the same tasks
+    usersData.forEach(({ tasks: { edges } }) =>
+      edges.forEach(({ node: { assignees } }) => {
+        assignees.forEach((name) => {
+          if (!names.includes(name) && !ids.includes(name)) names.push(name)
+        })
+      }),
+    )
+    const users = await getUsersData(names)
+
+    const graphData = transformUser(usersData, { folders, tasks }, users)
 
     updateGraphWithData(graphData)
   }
