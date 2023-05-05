@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo } from 'react'
 import 'reactflow/dist/style.css'
 import ReactFlow, { Background, useEdgesState, useNodesState, useReactFlow } from 'reactflow'
 import { useSelector } from 'react-redux'
@@ -17,12 +17,10 @@ import { useGetHierarchyQuery } from '/src/services/getHierarchy'
 import { ThemeProvider } from 'styled-components'
 import theme from './theme'
 import UserNode from '/src/components/Graph/UserNode'
-import { useNavigate } from 'react-router'
 import { transformUser } from './transform/user'
 
 const GraphPageFlow = () => {
   const reactFlowInstance = useReactFlow()
-  const navigate = useNavigate()
   const { name: projectName, folders, tasks, families } = useSelector((state) => state.project)
 
   const { focused } = useSelector((state) => state.context) || {}
@@ -33,9 +31,6 @@ const GraphPageFlow = () => {
     ['id'],
     withDefault(ArrayParam, focused?.[focused?.type + 's']),
   )
-
-  // store back state for some actions (like focus user)
-  const [back, setBack] = useState(null)
 
   const shareLink = `${
     window.location.origin
@@ -228,14 +223,6 @@ const GraphPageFlow = () => {
     [],
   )
 
-  const handleBack = () => {
-    if (!back) return
-
-    navigate(`/projects/${projectName}/graph?type=${back.type}&id=${back.ids.join('&id=')}`)
-
-    setBack(null)
-  }
-
   return (
     <div
       style={{
@@ -250,14 +237,6 @@ const GraphPageFlow = () => {
         style={{ position: 'absolute', top: 10, right: 10, zIndex: 10 }}
         onClick={() => copyToClipboard(shareLink)}
       />
-      {back && (
-        <Button
-          label="Back"
-          icon="arrow_back_ios_new"
-          style={{ position: 'absolute', top: 10, left: 10, zIndex: 10 }}
-          onClick={handleBack}
-        />
-      )}
       <ThemeProvider theme={theme}>
         <ReactFlow
           nodes={nodes}
