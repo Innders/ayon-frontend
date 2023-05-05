@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import 'reactflow/dist/style.css'
-import ReactFlow, { Background, useEdgesState, useNodesState } from 'reactflow'
+import ReactFlow, { Background, useEdgesState, useNodesState, useReactFlow } from 'reactflow'
 import { useSelector } from 'react-redux'
 import {
   useGetEntitiesGraphQuery,
@@ -16,8 +16,11 @@ import { useGetHierarchyQuery } from '/src/services/getHierarchy'
 import { ThemeProvider } from 'styled-components'
 import theme from './theme'
 import UserNode from '/src/components/Graph/UserNode'
+import { useNavigate } from 'react-router'
 
-const GraphPage = () => {
+const GraphPageFlow = () => {
+  const reactFlowInstance = useReactFlow()
+  const navigate = useNavigate()
   const { name: projectName, folders, tasks, families } = useSelector((state) => state.project)
 
   const { focused } = useSelector((state) => state.context) || {}
@@ -28,6 +31,9 @@ const GraphPage = () => {
     ['id'],
     withDefault(ArrayParam, focused?.[focused?.type + 's']),
   )
+
+  // store back state for some actions (like focus user)
+  const [back, setBack] = useState(null)
 
   const shareLink = `${
     window.location.origin
@@ -150,6 +156,13 @@ const GraphPage = () => {
     updateGraphWithData()
   }, [isFetching, isSuccess, data, isHierarchyFetching, hierarchyObjectData])
 
+  useEffect(() => {
+    // when nodes changes fit to bounds
+    if (nodes.length) {
+      reactFlowInstance?.fitView({ padding: 0.1, maxZoom: 1 })
+    }
+  }, [nodes])
+
   const handleFocus = (node) => {
     if (!node) return
     // sets the focused context
@@ -178,6 +191,14 @@ const GraphPage = () => {
     [],
   )
 
+  const handleBack = () => {
+    if (!back) return
+
+    navigate(`/projects/${projectName}/graph?type=${back.type}&id=${back.ids.join('&id=')}`)
+
+    setBack(null)
+  }
+
   return (
     <div
       style={{
@@ -192,6 +213,14 @@ const GraphPage = () => {
         style={{ position: 'absolute', top: 10, right: 10, zIndex: 10 }}
         onClick={() => copyToClipboard(shareLink)}
       />
+      {back && (
+        <Button
+          label="Back"
+          icon="arrow_back_ios_new"
+          style={{ position: 'absolute', top: 10, left: 10, zIndex: 10 }}
+          onClick={handleBack}
+        />
+      )}
       <ThemeProvider theme={theme}>
         <ReactFlow
           nodes={nodes}
@@ -207,4 +236,4 @@ const GraphPage = () => {
   )
 }
 
-export default GraphPage
+export default GraphPageFlow
