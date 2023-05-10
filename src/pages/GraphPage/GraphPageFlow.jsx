@@ -122,11 +122,6 @@ const GraphPageFlow = () => {
     // Finally update graph
     setNodes(nodes)
     setEdges(edges)
-
-    // get other nodes data in the background
-    nodes.forEach(
-      ({ data: { type, isLeaf }, id }) => !isLeaf && type !== 'user' && getEntityCache(type, id),
-    )
   }
 
   const transformEntityData = async () => {
@@ -231,6 +226,15 @@ const GraphPageFlow = () => {
     }
   }
 
+  const handleNodeClick = (e, node) => {
+    if (!node.data) return
+    const { type, id, isLeaf } = node.data
+    // prefetch data for clicked node
+    if (type !== 'user' || isLeaf) {
+      getEntityCache(type, id)
+    }
+  }
+
   // add custom node types to graph
   const nodeTypes = useMemo(
     () => ({
@@ -261,6 +265,7 @@ const GraphPageFlow = () => {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           nodeTypes={nodeTypes}
+          onNodeClick={handleNodeClick}
         >
           <Background variant="dots" gap={12} size={1} />
         </ReactFlow>
