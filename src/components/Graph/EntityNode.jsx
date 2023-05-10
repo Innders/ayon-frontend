@@ -11,6 +11,7 @@ export const StyledNode = styled.div`
   display: flex;
   gap: 4px;
   align-items: center;
+  min-width: 130px;
 
   span {
     color: black;
@@ -66,6 +67,7 @@ const EntityNode = ({ data, selected, dragging, onAction, id }) => {
     iconDefault = 'help_center',
     type,
     focused,
+    isLink,
     isLeaf,
   } = data || {}
 
@@ -78,13 +80,19 @@ const EntityNode = ({ data, selected, dragging, onAction, id }) => {
           isFocus={focused}
         />
       )}
-      <Handle type="target" position={Position.Left} />
+      {focused && (
+        <>
+          <Handle type="source" position={Position.Top} id="link" />
+          <Handle type="target" position={Position.Top} id="link" />
+        </>
+      )}
       <StyledNode type={type} isFocus={focused}>
         <StyledDefaultIcon icon={iconDefault} />
-        <Icon icon={icon} />
+        {!isLink && <Icon icon={icon} />}
         <span>{label}</span>
       </StyledNode>
-      {!isLeaf && <Handle type="source" position={Position.Right} />}
+      <Handle type="target" position={Position.Left} id="in" />
+      {!isLeaf && <Handle type="source" position={Position.Right} id="out" />}
     </>
   )
 }

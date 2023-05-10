@@ -4,7 +4,7 @@ export const createEntityNode = (entity, type, icons, data) => ({
   id: entity.id,
   type: 'entityNode',
   data: {
-    label: entity.name,
+    label: entity.label || entity.name,
     type: type,
     icon: icons[type + 's']?.[entity.subType]?.icon || icons[type + 's']?.def?.icon,
     iconDefault: icons[type + 's']?.def?.icon,
@@ -17,16 +17,7 @@ export const createEntityNode = (entity, type, icons, data) => ({
 // icons = icons (folders, families, tasks) from redux
 // type = 'folder' || 'subset' || 'task' || 'version'
 // hierarchy = object of folder ids and folder data
-export const transformEntity = (rawData = [], projectIcons, type, hierarchy = {}, users = []) => {
-  const extraIcons = {
-    versions: { def: { icon: 'layers' } },
-    workfiles: { def: { icon: 'home_repair_service' } },
-    representations: { def: { icon: 'view_in_ar' } },
-  }
-
-  // merge icons and extraIcons
-  const icons = { ...projectIcons, ...extraIcons }
-
+export const transformEntity = (rawData = [], icons, type, hierarchy = {}, users = []) => {
   const data = [...rawData]
   // transform data into two arrays
   // one for nodes and one for edges
@@ -103,6 +94,9 @@ export const transformEntity = (rawData = [], projectIcons, type, hierarchy = {}
           id: `${inputName}-${entityId}`,
           source: inputId,
           target: entityId,
+          targetHandle: 'in',
+          sourceHandle: 'out',
+          type: 'smoothstep',
         })
       }
     })
@@ -158,6 +152,72 @@ export const transformEntity = (rawData = [], projectIcons, type, hierarchy = {}
           id: `${entityId}-${childId || childName}`,
           source: entityId,
           target: childId || childName,
+          sourceHandle: 'out',
+          targetHandle: 'in',
+          type: 'smoothstep',
+        })
+      })
+    }
+
+    const createLinkNodes = (links) => {
+      let inRows = 0
+      let outRows = 0
+      // add to nodes
+      links.forEach((child) => {
+        // is the link in or out
+        const isOut = child.direction === 'out'
+        if (isOut) {
+          outRows += 1
+        } else {
+          inRows += 1
+        }
+
+        // the node that is linked to
+        const linkType = child.entityType
+        const linkId = child.node.id
+        const linkName = child.node.name
+
+        // layout
+        let gap = 50
+
+        // use the count to determine the y position
+        let subY = (isOut ? -outRows : -inRows) * gap - 100
+        // offset y by outputRows
+        subY += outputRows * gap
+
+        let subX = x
+
+        if (isOut) {
+          subX += 300
+        } else {
+          subX -= 300
+        }
+
+        // child node
+        const node = {
+          ...createEntityNode({ ...child, id: linkId, name: linkName }, linkType, icons, {
+            isLink: true,
+          }),
+          position: { x: subX, y: subY },
+        }
+
+        nodes.push(node)
+
+        const edgeId = isOut ? `${entityId}-${linkId}` : `${linkId}-${entityId}`
+        const source = isOut ? entityId : linkId
+        const target = isOut ? linkId : entityId
+
+        // create edges
+        edges.push({
+          id: edgeId,
+          source,
+          target,
+          sourceHandle: isOut ? 'link' : 'out',
+          targetHandle: isOut ? 'in' : 'link',
+          style: {
+            stroke: '#099E0F',
+            opacity: isOut ? 1 : 0.3,
+          },
         })
       })
     }
@@ -204,8 +264,13 @@ export const transformEntity = (rawData = [], projectIcons, type, hierarchy = {}
       outputRows += 1
     }
 
+    // add all links above
+    if (entity.links.edges.length) {
+      createLinkNodes(entity.links.edges)
+    }
+
     if (outputNodesCount) columns += 1
   })
 
-  return { nodes, edges }
+  return [nodes, edges]
 }

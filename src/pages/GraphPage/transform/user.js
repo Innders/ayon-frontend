@@ -26,10 +26,6 @@ export const transformUser = (rawData = [], icons, users = []) => {
   const nodes = []
   const edges = []
 
-  // sort data by the number of parents
-  // less parents first
-  data.sort((a, b) => a?.node?.parents?.length - b?.node?.parents?.length)
-
   // keep track if which rows are taken
   let columns = 0
   let outputRows = 0

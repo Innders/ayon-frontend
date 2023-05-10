@@ -131,6 +131,7 @@ const GraphPageFlow = () => {
 
   const transformEntityData = async () => {
     let users = usersData
+    let links = []
     // if type is task, get users
     if (type === 'task' && isSuccess) {
       // get assignees names from data
@@ -140,16 +141,32 @@ const GraphPageFlow = () => {
 
     // only transform data once we have all the data
     if (type !== 'folder' || !isHierarchyFetching) {
+      const icons = {
+        versions: { def: { icon: 'layers' } },
+        workfiles: { def: { icon: 'home_repair_service' } },
+        representations: { def: { icon: 'view_in_ar' } },
+        folders,
+        tasks,
+        subsets: families,
+      }
+
       // transform data to graph data
-      const graphData = transformEntity(
-        type === 'user' ? usersData : data,
-        { folders, tasks, subsets: families },
+      const [entityNodes = [], entityEdges = []] = transformEntity(
+        data,
+        icons,
         type,
         hierarchyObjectData,
         users,
+        links,
       )
 
-      updateGraphWithData(graphData)
+      updateGraphWithData(
+        {
+          nodes: entityNodes,
+          edges: entityEdges,
+        },
+        icons,
+      )
     }
   }
 
@@ -193,7 +210,7 @@ const GraphPageFlow = () => {
     if (nodes.length) {
       reactFlowInstance?.fitView({ padding: 0.1, maxZoom: 1 })
     }
-  }, [nodes])
+  }, [nodes.length])
 
   const handleFocus = (node) => {
     if (!node) return

@@ -27,6 +27,22 @@ const createTypeFragment = (type, extra) => `
         }
     }`
 
+export const LINKS_FRAGMENT = `
+    fragment LinksFragment on LinksConnection {
+        edges {
+            linkType
+            direction
+            author
+            entityType
+            node {
+                id
+                name
+            }
+
+        }
+    }
+`
+
 export const FOLDER_QUERY = `
     query Folders($projectName: String!, $ids: [String!]!) {
         project(name: $projectName) {
@@ -47,6 +63,9 @@ export const FOLDER_QUERY = `
                         tasks {
                             ...TasksFragment
                         }
+                        links {
+                            ...LinksFragment
+                        }
                     }
                 }
             }
@@ -54,6 +73,7 @@ export const FOLDER_QUERY = `
     }
     ${createTypeFragment('task')}
     ${createTypeFragment('subset')}
+    ${LINKS_FRAGMENT}
 `
 
 export const TASK_QUERY = `
@@ -77,6 +97,9 @@ export const TASK_QUERY = `
                             ...WorkfilesFragment
                         }
                         assignees
+                        links {
+                            ...LinksFragment
+                        }
                   }
               }
           }
@@ -84,6 +107,7 @@ export const TASK_QUERY = `
   }
     ${createTypeFragment('version')}
     ${createTypeFragment('workfile')}
+    ${LINKS_FRAGMENT}
 `
 
 export const SUBSET_QUERY = `
@@ -104,12 +128,16 @@ query Subset($projectName: String!, $ids: [String!]!) {
                     versions {
                         ...VersionsFragment
                     }
+                    links {
+                        ...LinksFragment
+                    }
                 }
             }
         }
     }
 }
 ${createTypeFragment('version')}
+${LINKS_FRAGMENT}
 `
 
 export const VERSION_QUERY = `
@@ -133,12 +161,16 @@ export const VERSION_QUERY = `
                         representations{
                             ...RepresentationsFragment
                         }
+                        links {
+                            ...LinksFragment
+                        }
                     }
                 }
             }
         }
     }
     ${createTypeFragment('representation')}
+    ${LINKS_FRAGMENT}
 `
 
 const USER_TASKS_QUERY = `
