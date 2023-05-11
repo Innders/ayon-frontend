@@ -159,9 +159,9 @@ export const transformEntity = (rawData = [], icons, type, hierarchy = {}, users
       })
     }
 
-    const createLinkNodes = (links) => {
-      let inRows = 0
-      let outRows = 0
+    const createLinkNodes = (links, type, [inInitRows, outInitRows]) => {
+      let inRows = inInitRows
+      let outRows = outInitRows
       // add to nodes
       links.forEach((child) => {
         // is the link in or out
@@ -173,7 +173,8 @@ export const transformEntity = (rawData = [], icons, type, hierarchy = {}, users
         }
 
         // the node that is linked to
-        const linkType = child.entityType
+        const linkType = child.linkType
+        const linkEntityType = child.entityType
         const linkId = child.node.id
         const linkName = child.node.name
 
@@ -195,8 +196,9 @@ export const transformEntity = (rawData = [], icons, type, hierarchy = {}, users
 
         // child node
         const node = {
-          ...createEntityNode({ ...child, id: linkId, name: linkName }, linkType, icons, {
+          ...createEntityNode({ ...child, id: linkId, name: linkName }, linkEntityType, icons, {
             isLink: true,
+            linkType,
           }),
           position: { x: subX, y: subY },
         }
@@ -215,11 +217,15 @@ export const transformEntity = (rawData = [], icons, type, hierarchy = {}, users
           sourceHandle: isOut ? 'link' : 'out',
           targetHandle: isOut ? 'in' : 'link',
           style: {
-            stroke: '#099E0F',
-            opacity: isOut ? 1 : 0.3,
+            stroke:
+              linkType === 'breakdown' ? '#27792A' : linkType === 'reuse' ? '#0061BB' : '#D94383',
+            opacity: isOut ? 1 : 0.4,
+            strokeWidth: isOut ? 2 : 1,
           },
         })
       })
+
+      return [inRows, outRows]
     }
 
     // folders can have child folders, but we need to extract them from hierarchy
@@ -266,7 +272,23 @@ export const transformEntity = (rawData = [], icons, type, hierarchy = {}, users
 
     // add all links above
     if (entity.links.edges.length) {
-      createLinkNodes(entity.links.edges)
+      const linksByType = entity.links.edges.reduce((acc, link) => {
+        const linkType = link.linkType
+        if (!acc[linkType]) {
+          acc[linkType] = []
+        }
+        acc[linkType].push(link)
+        return acc
+      }, {})
+
+      let typeInCount = 0,
+        typeOutCount = 0
+      for (const linkType in linksByType) {
+        const links = linksByType[linkType]
+        const added = createLinkNodes(links, linkType, [typeInCount, typeOutCount])
+        typeInCount += added[0]
+        typeOutCount += added[1]
+      }
     }
 
     if (outputNodesCount) columns += 1
