@@ -274,6 +274,10 @@ const Hierarchy = (props) => {
       label: 'Detail',
       command: () => setShowDetail(true),
     },
+    {
+      label: 'View Graph',
+      command: props.onViewGraph,
+    },
   ]
 
   //

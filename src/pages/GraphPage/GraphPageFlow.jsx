@@ -9,8 +9,6 @@ import {
   useLazyGetUsersGraphQuery,
 } from '/src/services/graph/getGraph'
 import { ArrayParam, StringParam, useQueryParam, withDefault } from 'use-query-params'
-import { Button } from '@ynput/ayon-react-components'
-import copyToClipboard from '/src/helpers/copyToClipboard'
 import EntityNode from '/src/components/Graph/EntityNode'
 import { transformEntity } from './transform'
 import { useGetHierarchyQuery } from '/src/services/getHierarchy'
@@ -31,10 +29,6 @@ const GraphPageFlow = () => {
     ['id'],
     withDefault(ArrayParam, focused?.[focused?.type + 's']),
   )
-
-  const shareLink = `${
-    window.location.origin
-  }/projects/${projectName}/graph?type=${type}&id=${ids.join('&id=')}`
 
   const { data: hierarchyData = [], isFetching: isHierarchyFetching } = useGetHierarchyQuery(
     { projectName },
@@ -252,12 +246,12 @@ const GraphPageFlow = () => {
         position: 'relative',
       }}
     >
-      <Button
+      {/* <Button
         label="Share Graph"
         icon="share"
         style={{ position: 'absolute', top: 10, right: 10, zIndex: 10 }}
         onClick={() => copyToClipboard(shareLink)}
-      />
+      /> */}
       <ThemeProvider theme={theme}>
         <ReactFlow
           nodes={nodes}

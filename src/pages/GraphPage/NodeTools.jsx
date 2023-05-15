@@ -28,11 +28,13 @@ const NodeTools = ({ onMouseOut, onAction, isLeaf, isFocus }) => {
       label: 'Delete',
       onClick: () => onAction('delete'),
       icon: 'delete',
+      disabled: true,
     },
     {
       label: 'Edit',
       onClick: () => onAction('edit'),
       icon: 'edit',
+      disabled: true,
     },
   ]
 
@@ -45,8 +47,15 @@ const NodeTools = ({ onMouseOut, onAction, isLeaf, isFocus }) => {
 
   return (
     <StyledMenu onMouseOut={onMouseOut}>
-      {tools.map(({ label, onClick, icon }) => (
-        <Button key={label} label={label} onClick={onClick} icon={icon} className="nodrag" />
+      {tools.map(({ label, onClick, icon, disabled }) => (
+        <Button
+          key={label}
+          label={label}
+          onClick={onClick}
+          icon={icon}
+          className="nodrag"
+          disabled={disabled}
+        />
       ))}
     </StyledMenu>
   )
