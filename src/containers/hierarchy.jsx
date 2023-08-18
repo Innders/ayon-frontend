@@ -62,8 +62,8 @@ const filterHierarchy = (text, folder, folders) => {
   return result
 }
 
-const Hierarchy = (props) => {
-  const projectName = useSelector((state) => state.project.name)
+const Hierarchy = ({ style, projectName: propsProjectName, disableURI }) => {
+  const projectName = useSelector((state) => state.project.name) || propsProjectName
   const foldersOrder = useSelector((state) => state.project.foldersOrder || [])
   const folders = useSelector((state) => state.project.folders || {})
   const folderTypeList = foldersOrder.map((f) => ({ label: f, value: f }))
@@ -223,7 +223,8 @@ const Hierarchy = (props) => {
 
   const onRowClick = (event) => {
     const node = event.node.data
-    dispatch(setUri(`ayon+entity://${projectName}/${node.parents.join('/')}/${node.name}`))
+    if (!disableURI)
+      dispatch(setUri(`ayon+entity://${projectName}/${node.parents.join('/')}/${node.name}`))
   }
 
   // Update the folder selection in the project context
@@ -353,7 +354,7 @@ const Hierarchy = (props) => {
   }
 
   return (
-    <Section style={props.style}>
+    <Section style={style}>
       <Toolbar>
         <InputText
           style={{ flexGrow: 1, minWidth: 100 }}

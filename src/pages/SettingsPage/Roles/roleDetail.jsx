@@ -6,7 +6,7 @@ import SettingsEditor from '/src/containers/SettingsEditor'
 import SaveButton from '/src/components/SaveButton'
 import { isEqual } from 'lodash'
 
-const RoleDetail = ({ projectName, role, onChange }) => {
+const RoleDetail = ({ projectName, role, onChange, onPickFolder }) => {
   const [originalData, setOriginalData] = useState(null)
   const [schema, setSchema] = useState(null)
   const [newData, setNewData] = useState(null)
@@ -89,6 +89,7 @@ const RoleDetail = ({ projectName, role, onChange }) => {
           icon="group_remove"
         />
         <Spacer />
+        <Button label={'Pick Folder'} onClick={onPickFolder} />
         <SaveButton
           onClick={onSave}
           label={`Save ${projectName ? 'project ' : ''}role`}
