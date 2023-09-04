@@ -1,16 +1,16 @@
 import { useNavigate } from 'react-router-dom'
-import * as Styled from './projectMenu.styled'
 import { useDispatch, useSelector } from 'react-redux'
 import { selectProject } from '/src/features/project'
 import { selectProject as selectProjectContext, setUri } from '/src/features/context'
 import { onProjectChange } from '/src/features/editor'
 import { ayonApi } from '/src/services/ayon'
-import MenuList from '/src/components/Menu/MenuComponents/MenuList'
 import { useGetAllProjectsQuery } from '/src/services/project/getProject'
-import { useMemo, useRef, useState } from 'react'
-import { Button, InputText, Section } from '@ynput/ayon-react-components'
+import { useMemo, useRef } from 'react'
+import { Button } from '@ynput/ayon-react-components'
 import useCreateContext from '/src/hooks/useCreateContext'
 import useLocalStorage from '/src/hooks/useLocalStorage'
+import Menu from '/src/components/Menu/MenuComponents/Menu'
+import ProjectMenuList from './ProjectMenuList'
 
 const ProjectMenu = ({ visible, onHide }) => {
   const navigate = useNavigate()
@@ -21,8 +21,6 @@ const ProjectMenu = ({ visible, onHide }) => {
   const projectSelected = useSelector((state) => state.project.name)
   const user = useSelector((state) => state.user)
   const isUser = user?.data?.isUser
-
-  const [projectsFilter, setProjectsFilter] = useState('')
 
   const { data: projects = [] } = useGetAllProjectsQuery()
 
@@ -71,7 +69,7 @@ const ProjectMenu = ({ visible, onHide }) => {
     return userItems
   }
 
-  const menuItems = useMemo(() => {
+  const projectItems = useMemo(() => {
     return projects.map((project) => ({
       id: project.name,
       label: [project.name, project.code],
@@ -79,23 +77,7 @@ const ProjectMenu = ({ visible, onHide }) => {
       onClick: () => onProjectSelect(project.name),
       onContextMenu: (e) => showContext(e, buildContextMenu(project.name)),
     }))
-  }, [projects, projectSelected, projectsFilter, pinned])
-
-  const filteredMenuItems = useMemo(() => {
-    return menuItems.filter((item) => {
-      const [name, code] = item.label
-      return (
-        name.toLowerCase().includes(projectsFilter.toLowerCase()) ||
-        code.toLowerCase().includes(projectsFilter.toLowerCase())
-      )
-    })
-  }, [menuItems, projectsFilter])
-
-  const pinnedMenuItems = useMemo(() => {
-    return filteredMenuItems
-      .filter((item) => pinned.includes(item.id))
-      .map((item) => ({ ...item, selected: false, highlighted: true }))
-  }, [filteredMenuItems, pinned])
+  }, [projects, projectSelected, pinned])
 
   const onProjectSelect = (projectName) => {
     onHide()
@@ -129,37 +111,13 @@ const ProjectMenu = ({ visible, onHide }) => {
 
   if (!visible) return null
 
-  const showingPinned = !!pinnedMenuItems.length && !projectsFilter
+  const menuItems = [
+    { node: <ProjectMenuList projectItems={projectItems} pinned={pinned} searchRef={searchRef} /> },
+  ]
 
   return (
-    <Styled.ProjectSidebar
-      position="left"
-      visible={true}
-      modal={false}
-      showCloseIcon={false}
-      onShow={() => searchRef.current?.focus()}
-      onHide={onHide}
-    >
-      <Section>
-        <Styled.Header>
-          <InputText
-            placeholder="Search projects..."
-            value={projectsFilter}
-            onChange={(e) => setProjectsFilter(e.target.value)}
-            ref={searchRef}
-          />
-        </Styled.Header>
-        {showingPinned && (
-          <div>
-            <h3>Pinned</h3>
-            <MenuList items={pinnedMenuItems} handleClick={(e, onClick) => onClick()} level={0} />
-          </div>
-        )}
-        <Styled.All>
-          {showingPinned && <h3>All</h3>}
-          <MenuList items={filteredMenuItems} handleClick={(e, onClick) => onClick()} level={0} />
-        </Styled.All>
-      </Section>
+    <>
+      <Menu menu={menuItems}></Menu>
       {!isUser && (
         <Button
           label="Create new project"
@@ -169,7 +127,7 @@ const ProjectMenu = ({ visible, onHide }) => {
           style={{ padding: '12px 0', borderRadius: 8 }}
         />
       )}
-    </Styled.ProjectSidebar>
+    </>
   )
 }
 

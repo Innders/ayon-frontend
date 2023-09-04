@@ -43,13 +43,14 @@ export const DialogContent = styled.div`
 
   /* position */
   position: absolute;
-  right: 0;
   top: 0;
   z-index: 30;
 
   /* animate */
   animation: ${DialogOpenAnimation} 0.03s ease-in forwards;
-  transform-origin: top right;
+  /* based on align left or right */
+  transform-origin: top ${(props) => (props.$align === 'left' ? 'left' : 'right')};
+
   /* add shadow to each item */
   & > *:not(.sub-menu),
   .sub-menu menu {

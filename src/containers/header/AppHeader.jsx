@@ -23,6 +23,7 @@ const Header = () => {
   const user = useSelector((state) => state.user)
 
   // BUTTON REFS used to attach menu to buttons
+  const projectsButtonRef = useRef(null)
   const helpButtonRef = useRef(null)
   const userButtonRef = useRef(null)
   const appButtonRef = useRef(null)
@@ -64,9 +65,12 @@ const Header = () => {
           alignItems: 'center',
           display: 'flex',
         }}
+        ref={projectsButtonRef}
       />
 
-      <ProjectMenu visible={menuOpen === 'project'} onHide={() => handleSetMenu(false)} />
+      <MenuContainer id="project" target={projectsButtonRef.current} align="left">
+        <ProjectMenu visible={menuOpen === 'project'} onHide={() => handleSetMenu(false)} />
+      </MenuContainer>
 
       <Breadcrumbs />
       <Spacer />

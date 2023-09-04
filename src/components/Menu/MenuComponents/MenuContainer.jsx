@@ -4,7 +4,7 @@ import { setMenuOpen } from '/src/features/context'
 import * as Styled from './Menu.styled'
 import { useNavigate } from 'react-router'
 
-const MenuContainer = ({ id, target, children, ...props }) => {
+const MenuContainer = ({ id, target, children, align = 'right', ...props }) => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const isOpen = useSelector((state) => state.context.menuOpen) === id
@@ -27,16 +27,23 @@ const MenuContainer = ({ id, target, children, ...props }) => {
   // then set the style of the dialog to position it there
 
   const pos = useMemo(() => {
-    let pos = { top: 4, right: 0 }
+    let pos = { top: 4 }
     if (target) {
       const rect = target.getBoundingClientRect()
-      pos = {
-        ...pos,
-        right: window.innerWidth - rect.right,
+      if (align === 'left') {
+        pos = {
+          ...pos,
+          left: rect.left,
+        }
+      } else {
+        pos = {
+          ...pos,
+          right: window.innerWidth - rect.right,
+        }
       }
     }
     return pos
-  }, [target])
+  }, [target, align])
 
   if (!isOpen) return null
 
@@ -68,7 +75,7 @@ const MenuContainer = ({ id, target, children, ...props }) => {
       ref={dialogRef}
       id="dialog"
     >
-      <Styled.DialogContent id="content" style={{ ...pos }}>
+      <Styled.DialogContent id="content" style={{ ...pos }} $align={align}>
         {children}
       </Styled.DialogContent>
     </Styled.Dialog>
